@@ -1,9 +1,8 @@
 pub use parser::prelude::*;
-use parser::span::Span;
 
 #[allow(clippy::too_many_lines)]
-pub fn parse(input: &str) -> Result<Program, ParseError> {
-    // fn parse(input: &str) -> Result<Line, ParseError> {
+// pub fn parse(input: &str) -> Result<Program, ParseError> {
+pub fn parse(input: &str) -> Result<InstructionWithSpan, ParseError> {
     let ws0 = choice((" ", "\t")).repeated().ignored();
 
     let ws1 = choice((" ", "\t"))
@@ -46,15 +45,19 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
     let reg = "r"
         .labelled("register")
         // parse all alphanumerics for better errors
-        .ignore_then(
-            ('0'..='7')
-                .to_char_range()
-                .labelled("register number (0-7)")
-                .cut(),
-        )
-        .map_with_span(|s, span| Reg {
-            inner: s.parse().unwrap(),
-            span,
+        .ignore_then(int(36).cut())
+        .try_map_with_span(|s, span| {
+            let inner = match s.parse::<u8>() {
+                Ok(n) if n <= 7 => n,
+                _ => {
+                    return Err(ParseError {
+                        message: ErrorMessage::Custom(format!("Expected registers 0-7, found {s}")),
+                        span_or_pos: SpanOrPos::Span(span),
+                        kind: ParseErrorType::Cut,
+                    })
+                }
+            };
+            Ok(Reg { inner, span })
         });
     let hex =
         "0x".labelled("hexadecimal number")
@@ -523,8 +526,27 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
         .boxed();
 
     let instruction = choice((
-        ld, st, halt, nop, mov, add, and, inca, inc, deca, dec, not, shl, shr, br, beq, bgt, jmp,
-        sys, directive, gpc,
+        ld.clone(),
+        st,
+        halt,
+        nop,
+        mov,
+        add,
+        and,
+        inca,
+        inc,
+        deca,
+        dec,
+        not,
+        shl,
+        shr,
+        br,
+        beq,
+        bgt,
+        jmp,
+        sys,
+        directive,
+        gpc,
     ))
     .boxed();
 
@@ -607,7 +629,7 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
         .repeated()
         .map(|sections| Program { inner: sections })
         .then_ignore(ws0);
-    program.parse_to_end(input)
+    ld.parse_to_end(input)
 }
 
 // reg type, used similarly to a primitive
