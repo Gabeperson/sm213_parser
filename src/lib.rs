@@ -553,7 +553,11 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
             .repeated()
             .slice()
             .optional(),
-        ws0.ignore_then(instruction).cut(),
+        ws0.ignore_then(instruction)
+            .if_no_progress(ErrorMessage::ExpectedOtherToken {
+                expected: vec!["instruction".to_string()],
+            })
+            .cut(),
         comment.optional(),
         ws0,
         nl_or_eof,
