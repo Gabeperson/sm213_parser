@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-parser = { git = "https://github.com/gabeperson/parser.git" }
+# parser = { git = "https://github.com/gabeperson/parser.git" }
+parser = { path = "../parser" }
