@@ -45,7 +45,7 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
     let reg = "r"
         .labelled("register")
         // parse all alphanumerics for better errors
-        .ignore_then(int(36).cut())
+        .ignore_then(int(36).labelled("register number (0-7)").cut())
         .try_map_with_span(|s, span| {
             let inner = match s.parse::<u8>() {
                 Ok(n) if n <= 7 => n,
