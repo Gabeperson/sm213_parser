@@ -1,8 +1,8 @@
 pub use parser::prelude::*;
 
 #[allow(clippy::too_many_lines)]
-// pub fn parse(input: &str) -> Result<Program, ParseError> {
-pub fn parse(input: &str) -> Result<InstructionWithSpan, ParseError> {
+pub fn parse(input: &str) -> Result<Program, ParseError> {
+    // pub fn parse(input: &str) -> Result<InstructionWithSpan, ParseError> {
     let ws0 = choice((" ", "\t")).repeated().ignored();
 
     let ws1 = choice((" ", "\t"))
@@ -526,27 +526,8 @@ pub fn parse(input: &str) -> Result<InstructionWithSpan, ParseError> {
         .boxed();
 
     let instruction = choice((
-        ld.clone(),
-        st,
-        halt,
-        nop,
-        mov,
-        add,
-        and,
-        inca,
-        inc,
-        deca,
-        dec,
-        not,
-        shl,
-        shr,
-        br,
-        beq,
-        bgt,
-        jmp,
-        sys,
-        directive,
-        gpc,
+        ld, st, halt, nop, mov, add, and, inca, inc, deca, dec, not, shl, shr, br, beq, bgt, jmp,
+        sys, directive, gpc,
     ))
     .boxed();
 
@@ -629,7 +610,7 @@ pub fn parse(input: &str) -> Result<InstructionWithSpan, ParseError> {
         .repeated()
         .map(|sections| Program { inner: sections })
         .then_ignore(ws0);
-    ld.parse_to_end(input)
+    program.parse_to_end(input)
 }
 
 // reg type, used similarly to a primitive
