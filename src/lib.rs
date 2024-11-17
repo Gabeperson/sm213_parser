@@ -222,7 +222,7 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
                 .if_no_progress(ErrorMessage::ExpectedOtherToken {
                     expected: vec!["offset access".to_string(), "indexed access".to_string()],
                 })
-                .cut(), /* .or(expected("base plus offset, or indexed")),*/
+                .cut(),
         )
         .map_with_span(|(reg, to), span| {
             InstructionWithSpan::new(Instruction::Store { from: reg, to }, span)
