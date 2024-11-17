@@ -5,6 +5,7 @@ version = 3
 [[package]]
 name = "parser"
 version = "0.1.0"
+source = "git+https://github.com/gabeperson/parser.git#51c2fb3490d80bf5c45ab2f50c7d371e30ddb4c5"
 
 [[package]]
 name = "sm213_parser"

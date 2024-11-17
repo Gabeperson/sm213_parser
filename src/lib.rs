@@ -553,7 +553,7 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
             .repeated()
             .slice()
             .optional(),
-        ws0.ignore_then(instruction),
+        ws0.ignore_then(instruction).cut(),
         comment.optional(),
         ws0,
         nl_or_eof,
