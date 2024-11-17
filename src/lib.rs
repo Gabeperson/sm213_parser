@@ -1,4 +1,4 @@
-use parser::prelude::*;
+pub use parser::prelude::*;
 use parser::span::Span;
 
 #[allow(clippy::too_many_lines)]
