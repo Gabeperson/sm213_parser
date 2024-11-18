@@ -538,7 +538,7 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
         instruction.clone(),
         comment.optional(),
         ws0,
-        nl_or_eof.cut(),
+        nl_or_eof.labelled("end of line").cut(),
     ))
     .map(
         |((), instruction, comment, (), ())| match (instruction, comment) {
@@ -568,7 +568,7 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
             .cut(),
         comment.optional(),
         ws0,
-        nl_or_eof.cut(),
+        nl_or_eof.labelled("end of line").cut(),
     ))
     .map(
         |((), label, label_comment, _, commentlist, instruction, inst_comment, (), ())| match (
