@@ -533,17 +533,22 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
 
     let section_empty = ws0.then_ignore(nl).to(Line::Empty).boxed();
     let section_comment = comment.then_ignore(nl_or_eof).map(Line::Comment).boxed();
-    let section_instruction_maybecomment =
-        group((ws0, instruction.clone(), comment.optional(), ws0, nl_or_eof))
-            .map(
-                |((), instruction, comment, (), ())| match (instruction, comment) {
-                    (instruction, Some(comment)) => {
-                        Line::CodeAndComment(Statement::new(None, instruction), comment)
-                    }
-                    (instruction, None) => Line::Code(Statement::new(None, instruction)),
-                },
-            )
-            .boxed();
+    let section_instruction_maybecomment = group((
+        ws0,
+        instruction.clone(),
+        comment.optional(),
+        ws0,
+        nl_or_eof.cut(),
+    ))
+    .map(
+        |((), instruction, comment, (), ())| match (instruction, comment) {
+            (instruction, Some(comment)) => {
+                Line::CodeAndComment(Statement::new(None, instruction), comment)
+            }
+            (instruction, None) => Line::Code(Statement::new(None, instruction)),
+        },
+    )
+    .boxed();
 
     let section_label_comment_comment_instruction_comment = group((
         ws0,
@@ -563,7 +568,7 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
             .cut(),
         comment.optional(),
         ws0,
-        nl_or_eof,
+        nl_or_eof.cut(),
     ))
     .map(
         |((), label, label_comment, _, commentlist, instruction, inst_comment, (), ())| match (
