@@ -27,7 +27,18 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
     let label = (Alpha.or("_").labelled("label"))
         .then(AlphaNumeric.or("_").repeated())
         .slice()
-        .map_with_span(Label);
+        .map_with_span(Label)
+        .try_map(|label| match label.0 {
+            "r0" | "r1" | "r2" | "r3" | "r4" | "r5" | "r6" | "r7" => Err(ParseError {
+                message: ErrorMessage::Custom(format!(
+                    "r[0-7] cannot be a label, but found {}",
+                    label.0
+                )),
+                span_or_pos: SpanOrPos::Span(label.1),
+                kind: ParseErrorType::Cut,
+            }),
+            _ => Ok(label),
+        });
     let labelmarker = label.then_ignore(ws0.then(":"));
 
     let mult = int(36)
