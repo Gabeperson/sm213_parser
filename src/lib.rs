@@ -296,7 +296,7 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
                 vec![
                     "address".to_string(),
                     "label".to_string(),
-                    "indirect address".to_string(),
+                    "indirect access".to_string(),
                     "double indirect access".to_string()
                 ]
             }
