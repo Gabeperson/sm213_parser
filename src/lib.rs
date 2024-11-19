@@ -565,60 +565,60 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
     )
     .boxed();
 
-    let section_label_comment_comment_instruction_comment = group((
-        ws0,
-        labelmarker,
-        comment.then_ignore(nl).optional(),
-        ws0.then(nl).optional(),
-        comment
-            .then_ignore(nl)
-            .or(ws0.ignore_then(nl).slice())
-            .repeated()
-            .slice()
-            .optional(),
-        ws0.ignore_then(instruction)
-            .if_no_progress(ErrorMessage::ExpectedOtherToken {
-                expected: vec!["instruction".to_string()],
-            })
-            .cut(),
-        comment.optional(),
-        ws0,
-        nl_or_eof.labelled("end of line").cut(),
-    ))
-    .map(
-        |((), label, label_comment, _, commentlist, instruction, inst_comment, (), ())| match (
-            label,
-            label_comment,
-            commentlist,
-            instruction,
-            inst_comment,
-        ) {
-            (label, label_comment, Some(commentlist), instruction, Some(inst_comment)) => {
-                Line::CodeAndComment(
-                    Statement::new(
-                        Some(((label, label_comment), Some(commentlist))),
+    let section_label_comment_comment_instruction_comment =
+        group((
+            ws0,
+            labelmarker,
+            comment.then_ignore(nl).optional(),
+            ws0.then(nl).optional(),
+            comment
+                .then_ignore(nl)
+                .or(ws0.ignore_then(nl).slice())
+                .repeated()
+                .slice()
+                .optional(),
+            ws0,
+            instruction
+                .if_no_progress(ErrorMessage::ExpectedOtherToken {
+                    expected: vec!["instruction".to_string()],
+                })
+                .cut(),
+            comment.optional(),
+            ws0,
+            nl_or_eof.labelled("end of line").cut(),
+        ))
+        .map(
+            |((), label, label_comment, _, commentlist, (), instruction, inst_comment, (), ())| {
+                match (label, label_comment, commentlist, instruction, inst_comment) {
+                    (label, label_comment, Some(commentlist), instruction, Some(inst_comment)) => {
+                        Line::CodeAndComment(
+                            Statement::new(
+                                Some(((label, label_comment), Some(commentlist))),
+                                instruction,
+                            ),
+                            inst_comment,
+                        )
+                    }
+                    (label, label_comment, Some(commentlist), instruction, None) => {
+                        Line::Code(Statement::new(
+                            Some(((label, label_comment), Some(commentlist))),
+                            instruction,
+                        ))
+                    }
+                    (label, label_comment, None, instruction, Some(inst_comment)) => {
+                        Line::CodeAndComment(
+                            Statement::new(Some(((label, label_comment), None)), instruction),
+                            inst_comment,
+                        )
+                    }
+                    (label, label_comment, None, instruction, None) => Line::Code(Statement::new(
+                        Some(((label, label_comment), None)),
                         instruction,
-                    ),
-                    inst_comment,
-                )
-            }
-            (label, label_comment, Some(commentlist), instruction, None) => {
-                Line::Code(Statement::new(
-                    Some(((label, label_comment), Some(commentlist))),
-                    instruction,
-                ))
-            }
-            (label, label_comment, None, instruction, Some(inst_comment)) => Line::CodeAndComment(
-                Statement::new(Some(((label, label_comment), None)), instruction),
-                inst_comment,
-            ),
-            (label, label_comment, None, instruction, None) => Line::Code(Statement::new(
-                Some(((label, label_comment), None)),
-                instruction,
-            )),
-        },
-    )
-    .boxed();
+                    )),
+                }
+            },
+        )
+        .boxed();
 
     let section = choice((
         section_empty,
