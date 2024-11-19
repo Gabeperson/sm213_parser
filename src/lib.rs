@@ -546,7 +546,11 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
     let section_comment = comment.then_ignore(nl_or_eof).map(Line::Comment).boxed();
     let section_instruction_maybecomment = group((
         ws0,
-        instruction.clone(),
+        instruction
+            .clone()
+            .if_no_progress(ErrorMessage::ExpectedOtherToken {
+                expected: vec!["instruction".to_string()],
+            }),
         comment.optional(),
         ws0,
         nl_or_eof.labelled("end of line").cut(),
