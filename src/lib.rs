@@ -59,7 +59,19 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
         .ignore_then(int(36).labelled("register number (0-7)").cut())
         .try_map_with_span(|s, span| {
             let inner = match s.parse::<u8>() {
-                Ok(n) if n <= 7 => n,
+                Ok(n) if n == 0 => n,
+                Ok(n) if n <= 7 => {
+                    if s.starts_with("0") {
+                        return Err(ParseError {
+                            message: ErrorMessage::Custom(format!(
+                                "Registers should not have extra '0's in front, found {s}"
+                            )),
+                            span_or_pos: SpanOrPos::Span(span),
+                            kind: ParseErrorType::Cut,
+                        });
+                    }
+                    n
+                }
                 _ => {
                     return Err(ParseError {
                         message: ErrorMessage::Custom(format!("Expected registers 0-7, found {s}")),
