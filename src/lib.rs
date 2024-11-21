@@ -889,7 +889,6 @@ pub struct Diagnostic {
 pub enum Severity {
     Error,
     Warning,
-    Hint,
 }
 
 static KEYWORDS: &[&str] = &[
