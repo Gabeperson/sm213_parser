@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub use parser::prelude::*;
 
 #[allow(clippy::too_many_lines)]
@@ -862,4 +864,113 @@ pub enum Line<'source> {
     Comment(&'source str),
     CodeAndComment(Statement<'source>, &'source str),
     Empty,
+}
+
+impl<'source> Line<'source> {
+    fn code(&self) -> Option<&Statement> {
+        match self {
+            Line::Code(c) => Some(c),
+            Line::Comment(_) => None,
+            Line::CodeAndComment(c, _) => Some(c),
+            Line::Empty => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Diagnostic {
+    pub severity: Severity,
+    pub message: String,
+    pub span: Span,
+    pub related: Option<(String, Span)>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Severity {
+    Error,
+    Warning,
+    Hint,
+}
+
+static KEYWORDS: &[&str] = &[
+    "ld", "st", "halt", "nop", "mov", "add", "and", "inc", "inca", "dec", "deca", "not", "shl",
+    "shr", "br", "beq", "bgt", "j", "gpc", "sys", "pos", "long",
+];
+
+pub fn second_pass(program: &Program) -> Vec<Diagnostic> {
+    let mut output = Vec::new();
+
+    let mut labels: HashMap<&str, Label<'_>> = HashMap::new();
+
+    for line in &program.inner {
+        if let Some(s) = line.code() {
+            if let Some(((l, _), _)) = s.label_and_comment {
+                if let Some(map_l) = labels.get(l.0) {
+                    output.push(Diagnostic {
+                        severity: Severity::Error,
+                        message: format!("Label {} was already declared before!", l.0),
+                        span: l.1,
+                        related: Some(("Label declared here".to_string(), map_l.1)),
+                    })
+                }
+                labels.insert(l.0, l);
+            }
+        }
+    }
+    for (labelname, Label(_, span)) in &labels {
+        if KEYWORDS.contains(labelname) {
+            output.push(Diagnostic {
+                severity: Severity::Warning,
+                message: format!("Keyword used in a label: {labelname}"),
+                span: *span,
+                related: None,
+            })
+        }
+    }
+
+    for line in &program.inner {
+        if let Some(s) = line.code() {
+            let InstructionWithSpan { ref inst, .. } = s.instruction;
+            match inst {
+                Instruction::Load {
+                    from: (LoadFrom::ImmediateLabel(label), _),
+                    ..
+                }
+                | Instruction::Branch {
+                    to: (BranchLocation::Label(label), _),
+                }
+                | Instruction::BranchIfGreater {
+                    to: (BranchLocation::Label(label), _),
+                    ..
+                }
+                | Instruction::Jump {
+                    to: (JumpLocation::Label(label), _),
+                }
+                | Instruction::BranchIfEqual {
+                    to: (BranchLocation::Label(label), _),
+                    ..
+                } => {
+                    if !labels.contains_key(label.0) {
+                        output.push(Diagnostic {
+                            severity: Severity::Error,
+                            message: "Label not found!".to_string(),
+                            span: label.1,
+                            related: None,
+                        })
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /*
+    TODO:
+    once "assembler" is done, make a pass to verify that .pos points to a valid location.
+
+
+
+    */
+
+    output
 }
