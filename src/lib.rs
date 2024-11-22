@@ -910,7 +910,8 @@ pub fn second_pass(program: &Program) -> Vec<Diagnostic> {
                         message: format!("Label {} declared previously", l.0),
                         span: l.1,
                         related: Some(("Label declared here".to_string(), map_l.1)),
-                    })
+                    });
+                    continue;
                 }
                 labels.insert(l.0, l);
             }
