@@ -907,7 +907,7 @@ pub fn second_pass(program: &Program) -> Vec<Diagnostic> {
                 if let Some(map_l) = labels.get(l.0) {
                     output.push(Diagnostic {
                         severity: Severity::Error,
-                        message: format!("Label {} was already declared before!", l.0),
+                        message: format!("Label {} declared previously", l.0),
                         span: l.1,
                         related: Some(("Label declared here".to_string(), map_l.1)),
                     })
@@ -952,7 +952,7 @@ pub fn second_pass(program: &Program) -> Vec<Diagnostic> {
                     if !labels.contains_key(label.0) {
                         output.push(Diagnostic {
                             severity: Severity::Error,
-                            message: "Label not found!".to_string(),
+                            message: format!("Use of non-existent label `{}`", label.0),
                             span: label.1,
                             related: None,
                         })
