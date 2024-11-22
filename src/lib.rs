@@ -907,7 +907,7 @@ pub fn second_pass(program: &Program) -> Vec<Diagnostic> {
                 if let Some(map_l) = labels.get(l.0) {
                     output.push(Diagnostic {
                         severity: Severity::Error,
-                        message: format!("Label {} declared previously", l.0),
+                        message: format!("Label `{}` declared previously", l.0),
                         span: l.1,
                         related: Some(("Label declared here".to_string(), map_l.1)),
                     });
@@ -921,7 +921,7 @@ pub fn second_pass(program: &Program) -> Vec<Diagnostic> {
         if KEYWORDS.contains(labelname) {
             output.push(Diagnostic {
                 severity: Severity::Warning,
-                message: format!("Keyword used in a label: {labelname}"),
+                message: format!("Keyword used as label: `{labelname}`"),
                 span: *span,
                 related: None,
             })
