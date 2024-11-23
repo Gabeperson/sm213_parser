@@ -661,10 +661,22 @@ impl std::fmt::Debug for Reg {
     }
 }
 
+impl std::fmt::Display for Reg {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "r{}", self.inner)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct InstructionWithSpan<'source> {
     pub inst: Instruction<'source>,
     pub span: Span,
+}
+
+impl std::fmt::Display for InstructionWithSpan<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "r{}", self.inst)
+    }
 }
 
 impl<'source> InstructionWithSpan<'source> {
@@ -676,6 +688,12 @@ impl<'source> InstructionWithSpan<'source> {
 #[derive(Debug, Clone, Copy)]
 pub struct Label<'source>(pub &'source str, pub Span);
 
+impl std::fmt::Display for Label<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum LoadFrom<'source> {
     ImmediateNumber(Num),
@@ -686,6 +704,22 @@ pub enum LoadFrom<'source> {
     Indexed { base: Reg, index: Reg },
 }
 
+impl std::fmt::Display for LoadFrom<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoadFrom::ImmediateNumber(n) => write!(f, "${n}"),
+            LoadFrom::ImmediateLabel(l) => write!(f, "${l}"),
+            LoadFrom::Offset { offset, base } => {
+                if let Some(offset) = offset {
+                    return write!(f, "{offset}({base})");
+                }
+                write!(f, "({base})")
+            }
+            LoadFrom::Indexed { base, index } => write!(f, "({base}, {index}, 4)"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum StoreTo {
     // offset must be a multiple of 4, and must be 0 <= offset <= 60
@@ -694,16 +728,50 @@ pub enum StoreTo {
     Indexed { base: Reg, index: Reg },
 }
 
+impl std::fmt::Display for StoreTo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StoreTo::Offset { offset, base } => {
+                if let Some(offset) = offset {
+                    return write!(f, "{offset}({base})");
+                }
+                write!(f, "({base})")
+            }
+            StoreTo::Indexed { base, index } => {
+                write!(f, "({base}, {index}, 4)")
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum BranchLocation<'source> {
     Address(Num),
     Label(Label<'source>),
 }
 
+impl std::fmt::Display for BranchLocation<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BranchLocation::Address(a) => write!(f, "{a}"),
+            BranchLocation::Label(l) => write!(f, "{l}"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum DirectiveLongValue<'source> {
     Number(Num),
     Label(Label<'source>),
+}
+
+impl std::fmt::Display for DirectiveLongValue<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DirectiveLongValue::Number(n) => write!(f, "{n}"),
+            DirectiveLongValue::Label(l) => write!(f, "{l}"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -716,11 +784,43 @@ pub enum JumpLocation<'source> {
     DoubleIndirect(DoubleIndirectMethod),
 }
 
+impl std::fmt::Display for JumpLocation<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            JumpLocation::Label(l) => write!(f, "{l}"),
+            JumpLocation::Addr(a) => write!(f, "{a}"),
+            JumpLocation::Indirect { offset, to } => {
+                if let Some(offset) = offset {
+                    return write!(f, "{offset}({to})");
+                }
+                write!(f, "({to})")
+            }
+            JumpLocation::DoubleIndirect(di) => {
+                write!(f, "{di}")
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum DoubleIndirectMethod {
     // offset must be divisible by 4 and 0 <= 1020 as it is stored in a single byte * 4
     Offset { offset: Option<Num>, to: Reg },
     Indexed { base: Reg, index: Reg },
+}
+
+impl std::fmt::Display for DoubleIndirectMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DoubleIndirectMethod::Offset { offset, to } => {
+                if let Some(offset) = offset {
+                    return write!(f, "*{offset}({to})");
+                }
+                write!(f, "({to})")
+            }
+            DoubleIndirectMethod::Indexed { base, index } => write!(f, "*({base}, {index}, 4)"),
+        }
+    }
 }
 
 #[rustfmt::skip]
@@ -759,6 +859,40 @@ pub enum Instruction<'source> {
     // loc must not be negative
     DirectivePos { loc: (Num, Span) },
     // Label { name: String },
+}
+
+impl std::fmt::Display for Instruction<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Instruction::Load {
+                from: (from, _),
+                to,
+            } => {
+                write!(f, "ld {from}, {to}")
+            }
+            Instruction::Store { from, to: (to, _) } => write!(f, "st {from}, {to}"),
+            Instruction::Halt => write!(f, "halt"),
+            Instruction::Nop => write!(f, "nop"),
+            Instruction::Mov { from, to } => write!(f, "mov {from}, {to}"),
+            Instruction::Add { from, to } => write!(f, "add {from}, {to}"),
+            Instruction::And { from, to } => write!(f, "and {from}, {to}"),
+            Instruction::Inc { reg } => write!(f, "inc {reg}"),
+            Instruction::IncAddr { reg } => write!(f, "inca {reg}"),
+            Instruction::Dec { reg } => write!(f, "dec {reg}"),
+            Instruction::DecAddr { reg } => write!(f, "deca {reg}"),
+            Instruction::Not { reg } => write!(f, "not {reg}"),
+            Instruction::ShiftLeft { amt, reg } => write!(f, "shl ${amt}, {reg}"),
+            Instruction::ShiftRight { amt, reg } => write!(f, "shr ${amt}, {reg}"),
+            Instruction::Branch { to: (to, _) } => write!(f, "br {to}"),
+            Instruction::BranchIfEqual { reg, to: (to, _) } => write!(f, "beq {reg}, {to}"),
+            Instruction::BranchIfGreater { reg, to: (to, _) } => write!(f, "bgt {reg}, {to}"),
+            Instruction::GetProgramCounter { offset, to } => write!(f, "gpc ${offset}, {to}"),
+            Instruction::Jump { to: (to, _) } => write!(f, "j {to}"),
+            Instruction::Syscall { typ: (typ, _) } => write!(f, "sys ${typ}"),
+            Instruction::DirectiveLong { value: (val, _) } => write!(f, ".long {val}"),
+            Instruction::DirectivePos { loc: (loc, _) } => write!(f, ".pos {loc}"),
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -829,12 +963,35 @@ pub enum SyscallType {
     Read,
     Write,
     Exec,
-    // Invalid code found
-    Err,
 }
+
+impl std::fmt::Display for SyscallType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SyscallType::Read => write!(f, "0"),
+            SyscallType::Write => write!(f, "1"),
+            SyscallType::Exec => write!(f, "2"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Program<'source> {
     pub inner: Vec<Line<'source>>,
+}
+
+const TAB: &str = "    ";
+
+impl std::fmt::Display for Program<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (i, line) in self.inner.iter().enumerate() {
+            if i != 0 {
+                writeln!(f)?;
+            }
+            write!(f, "{line}")?;
+        }
+        Ok(())
+    }
 }
 
 type LabelComment<'source> = (Label<'source>, Option<&'source str>);
@@ -844,6 +1001,28 @@ pub struct Statement<'source> {
     // This exists so we can format and keep comment locations.
     pub label_and_comment: Option<(LabelComment<'source>, Option<&'source str>)>,
     pub instruction: InstructionWithSpan<'source>,
+}
+
+impl std::fmt::Display for Statement<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.label_and_comment {
+            Some(((label, labelcomment), comments)) => {
+                write!(f, "{label}:")?;
+                if let Some(comment) = labelcomment {
+                    // TODO
+                    write!(f, "{comment}")?;
+                }
+                writeln!(f)?;
+                if let Some(comments) = comments {
+                    write!(f, "{comments}")?;
+                }
+                writeln!(f)?;
+                write!(f, "{TAB}{}", self.instruction)?;
+                Ok(())
+            }
+            None => write!(f, "{}", self.instruction),
+        }
+    }
 }
 
 impl<'source> Statement<'source> {
@@ -864,6 +1043,19 @@ pub enum Line<'source> {
     Comment(&'source str),
     CodeAndComment(Statement<'source>, &'source str),
     Empty,
+}
+
+impl std::fmt::Display for Line<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Line::Code(code) => writeln!(f, "{code}"),
+            Line::Comment(comment) => writeln!(f, "{comment}"),
+            Line::CodeAndComment(code, comment) => {
+                writeln!(f, "{code}{comment}")
+            }
+            Line::Empty => writeln!(f),
+        }
+    }
 }
 
 impl<'source> Line<'source> {
@@ -974,3 +1166,7 @@ pub fn second_pass(program: &Program) -> Vec<Diagnostic> {
 
     output
 }
+
+// fn format(p: &Program) {
+
+// }
