@@ -675,7 +675,7 @@ pub struct InstructionWithSpan<'source> {
 
 impl std::fmt::Display for InstructionWithSpan<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "r{}", self.inst)
+        write!(f, "{}", self.inst)
     }
 }
 
@@ -1005,22 +1005,25 @@ pub struct Statement<'source> {
 
 impl std::fmt::Display for Statement<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.label_and_comment {
-            Some(((label, labelcomment), comments)) => {
-                write!(f, "{label}:")?;
-                if let Some(comment) = labelcomment {
-                    // TODO
-                    write!(f, "{comment}")?;
-                }
-                writeln!(f)?;
-                if let Some(comments) = comments {
-                    write!(f, "{comments}")?;
-                }
-                writeln!(f)?;
-                write!(f, "{TAB}{}", self.instruction)?;
-                Ok(())
+        if let Some(((label, labelcomment), comments)) = self.label_and_comment {
+            write!(f, "{label}:")?;
+            if let Some(comment) = labelcomment {
+                write!(f, "{comment}")?;
             }
-            None => write!(f, "{}", self.instruction),
+            if let Some(comments) = comments {
+                write!(f, "{comments}")?;
+            }
+            writeln!(f)?;
+        }
+        if let InstructionWithSpan {
+            inst: Instruction::DirectivePos { .. },
+            ..
+        } = self.instruction
+        {
+            // .pos usually shouldn't be indented
+            write!(f, "{}", self.instruction)
+        } else {
+            write!(f, "{TAB}{}", self.instruction)
         }
     }
 }
@@ -1048,12 +1051,12 @@ pub enum Line<'source> {
 impl std::fmt::Display for Line<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Line::Code(code) => writeln!(f, "{code}"),
-            Line::Comment(comment) => writeln!(f, "{comment}"),
+            Line::Code(code) => write!(f, "{code}"),
+            Line::Comment(comment) => write!(f, "{comment}"),
             Line::CodeAndComment(code, comment) => {
-                writeln!(f, "{code}{comment}")
+                write!(f, "{code}{comment}")
             }
-            Line::Empty => writeln!(f),
+            Line::Empty => Ok(()),
         }
     }
 }
