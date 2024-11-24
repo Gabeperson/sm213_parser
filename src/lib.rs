@@ -422,6 +422,15 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
                 kind: ParseErrorType::Cut,
             });
         }
+        if to % 2 != 0 {
+            return Err(ParseError {
+                message: ErrorMessage::Custom(format!(
+                    "Branch location should be divisible by 2, found `{to}`"
+                )),
+                span_or_pos: SpanOrPos::Span(span),
+                kind: ParseErrorType::Cut,
+            });
+        }
         Ok((BranchLocation::Address(to), span))
     });
     let br = "br"
