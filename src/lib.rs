@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-pub use parser::prelude::*;
+pub use parser;
+use parser::prelude::*;
 
 #[allow(clippy::too_many_lines)]
 pub fn parse(input: &str) -> Result<Program, ParseError> {
