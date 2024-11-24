@@ -257,10 +257,10 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
     let jmp_location = choice((
         base_plus_offset.clone().try_map_with_span(|(offset, base), span| {
             if let Some(offset) = offset {
-                if !((0..=508).contains(&offset) && offset % 2 == 0) {
+                if !((0..=510).contains(&offset) && offset % 2 == 0) {
                     return Err(ParseError {
                         message: ErrorMessage::Custom(format!(
-                            "jmp offset should be 0 <= offset <= 508 and divisible by 2, found `{offset}`"
+                            "jmp offset should be 0 <= offset <= 510 and divisible by 2, found `{offset}`"
                         )),
                         span_or_pos: SpanOrPos::Span(span),
                         kind: ParseErrorType::Cut,
@@ -786,7 +786,7 @@ pub enum JumpLocation<'source> {
     Label(Label<'source>),
     // Must NOT be negative
     Addr(Num),
-    // offset must be divisible by 2 and 0 <= 508 as it is stored in a single byte * 2
+    // offset must be divisible by 2 and 0 <= 510 as it is stored in a single byte * 2
     Indirect { offset: Option<Num>, to: Reg },
     DoubleIndirect(DoubleIndirectMethod),
 }
