@@ -652,8 +652,14 @@ pub fn parse(input: &str) -> Result<Program, ParseError> {
 // val must be 0 <= val <= 7
 #[derive(Clone, Copy)]
 pub struct Reg {
-    pub inner: u8,
+    inner: u8,
     pub span: Span,
+}
+
+impl Reg {
+    pub fn value(&self) -> u8 {
+        self.inner
+    }
 }
 
 impl std::fmt::Debug for Reg {
