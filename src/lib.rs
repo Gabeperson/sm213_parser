@@ -1096,7 +1096,7 @@ pub struct Diagnostic {
     pub related: Option<(String, Span)>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Severity {
     Error,
     Warning,
@@ -1107,7 +1107,15 @@ static KEYWORDS: &[&str] = &[
     "shr", "br", "beq", "bgt", "j", "gpc", "sys", "pos", "long",
 ];
 
-pub fn second_pass(program: &Program) -> Vec<Diagnostic> {
+#[non_exhaustive]
+#[derive(Debug, Clone)]
+pub struct SecondPassOutput<'a, 'input> {
+    pub inner: &'a Program<'input>,
+}
+
+pub fn second_pass<'a, 'input>(
+    program: &'a Program<'input>,
+) -> (Vec<Diagnostic>, Option<SecondPassOutput<'a, 'input>>) {
     let mut output = Vec::new();
 
     let mut labels: HashMap<&str, Label<'_>> = HashMap::new();
@@ -1183,7 +1191,15 @@ pub fn second_pass(program: &Program) -> Vec<Diagnostic> {
 
     */
 
-    output
+    if output
+        .iter()
+        .find(|err| err.severity == Severity::Error)
+        .is_some()
+    {
+        (output, None)
+    } else {
+        (output, Some(SecondPassOutput { inner: program }))
+    }
 }
 
 // fn format(p: &Program) {
